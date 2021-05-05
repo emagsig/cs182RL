@@ -6,6 +6,7 @@ from .models.sigmoid_impala import sigmoid_impala_model
 from .models.leaky_relu_impala import leaky_relu_impala_model
 from .models.sigmoid_leaky_impala import sigmoid_leaky_impala_model
 from .models.leaky_sigmoid_impala import leaky_sigmoid_impala_model
+from .models.absolute_relu_model import absolute_relu_impala_model
 
 from baselines.common.mpi_util import setup_mpi_gpus
 from baselines.common.models import build_impala_cnn
@@ -60,7 +61,8 @@ def train_fn(env_name, num_envs, distribution_mode, num_levels, start_level, tim
     #conv_fn = lambda x: leaky_sigmoid_impala_model(x, depths=[16,32,32,32])
     #conv_fn = lambda x: sigmoid_leaky_impala_model(x, depths=[16,32,32,32])
     #conv_fn = lambda x: leaky_relu_impala_model(x, depths=[16,32,32,32])
-    conv_fn = lambda x: sigmoid_impala_model(x, depths=[16,32,32,32])
+    #conv_fn = lambda x: sigmoid_impala_model(x, depths=[16,32,32,32])
+    conv_fn = lambda x: absolute_relu_impala_model(x, depths=[16,32,32,32])
     #conv_fn = lambda x: build_impala_cnn(x, depths=[16,32,32], emb_size=256)
     logger.info("training")
     ppo2.learn(
@@ -94,7 +96,7 @@ def main():
     parser.add_argument('--num_levels', type=int, default=0)
     parser.add_argument('--start_level', type=int, default=0)
     parser.add_argument('--test_worker_interval', type=int, default=0)
-    parser.add_argument('--timesteps_per_proc', type=int, default=10000)
+    parser.add_argument('--timesteps_per_proc', type=int, default=50000000)
 
     args = parser.parse_args()
 
