@@ -1,6 +1,6 @@
 """
 Run:
-python -m train_procgen.train --env_name fruitbot --num_levels 50 --timesteps_per_proc 1_000_000 --start_level 500 --num_envs 32 --test_worker_interval 4
+python -m train_procgen.train --env_name fruitbot --num_levels 50 --timesteps_per_proc 1_000_000 --start_level 500 --num_envs 32
 """
 
 """ USE CPU """

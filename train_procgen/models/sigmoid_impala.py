@@ -50,11 +50,8 @@ def sigmoid_impala_model(unscaled_images, depths=[16,32,32,32]):
     out = tf.nn.relu(out)
     out = tf.layers.dense(out, 256, activation=tf.nn.relu, name='layer_' + get_layer_num_str())
 
-<<<<<<< HEAD
     # change to sigmoid
     # out = tf.nn.sigmoid(out)
     # out = tf.layers.dense(out, 256, activation=tf.nn.sigmoid, name='layer_' + get_layer_num_str())
 
-=======
->>>>>>> 2695f0864132a2f01786008a431e0132d3b39b63
     return out
