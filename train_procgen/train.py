@@ -106,9 +106,6 @@ def train_fn(env_name, num_envs, distribution_mode, num_levels, start_level, tim
     # print("sigmoid_impala_model")
     # conv_fn = lambda x: sigmoid_impala_model(x, depths=[16,32,32,32])
 
-    # print("build_impala_cnn")
-    # conv_fn = lambda x: build_impala_cnn(x, depths=[16,32,32], emb_size=256)
-
     # print("absolute_relu_impala_model")
     # conv_fn = lambda x: absolute_relu_impala_model(x, depths=[16,32,32,32])
 
@@ -127,7 +124,18 @@ def train_fn(env_name, num_envs, distribution_mode, num_levels, start_level, tim
     # print("lstmcnn_leakysigmoid_")
     # conv_fn = lstm_cnn(nlstm=128, layer_norm=True, conv_fn=leaky_sigmoid_impala_model, depths = [16,32,32,32]) # **kwargs for cnn passed in normally
 
+    # TODO: Finish subbing in remaining cnns and upload results to groupme
     # print("lstmcnn_sigmoidleaky_")
+    # conv_fn = lstm_cnn(nlstm=128, layer_norm=True, conv_fn=sigmoid_leaky_impala_model, depths = [16,32,32,32]) # **kwargs for cnn passed in normally
+
+    # print("lstmcnn_leakyrelu_")
+    # conv_fn = lstm_cnn(nlstm=128, layer_norm=True, conv_fn=leaky_relu_impala_model, depths = [16,32,32,32]) # **kwargs for cnn passed in normally
+
+    # print("lstmcnn_sigmoid_")
+    # conv_fn = lstm_cnn(nlstm=128, layer_norm=True, conv_fn=sigmoid_impala_model, depths = [16,32,32,32]) # **kwargs for cnn passed in normally
+
+    print("lstmcnn_absrelu_")
+    conv_fn = lstm_cnn(nlstm=128, layer_norm=True, conv_fn=absolute_relu_impala_model, depths = [16,32,32,32]) # **kwargs for cnn passed in normally
 
 
     logger.info("training")
