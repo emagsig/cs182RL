@@ -1,16 +1,15 @@
-""" USE CPU """
-# import tensorflow as tf
-""" USE GPU """
-import tensorflow.compat.v1 as tf
-tf.disable_v2_behavior()
-
 import numpy as np
+import tensorflow as tf
 from baselines.a2c import utils
 from baselines.a2c.utils import conv, fc, conv_to_fc, batch_to_seq, seq_to_batch
 from baselines.common.mpi_running_mean_std import RunningMeanStd
+from tensorflow.keras import backend as K
 
+def ALReLU(x):
+    alpha = 0.01
+    return K.maximum(K.abs(alpha*x), x)
 
-def sigmoid_impala_model(unscaled_images, depths=[16,32,32,32]):
+def absolute_relu_impala_model(unscaled_images, depths=[16,32,32,32]):
 
 
     layer_num = 0
@@ -26,9 +25,9 @@ def sigmoid_impala_model(unscaled_images, depths=[16,32,32,32]):
     def residual_block(inputs):
         depth = inputs.get_shape()[-1].value
 
-        out = tf.nn.sigmoid(inputs)
+        out =  ALReLU(inputs)
         out = conv_layer(out, depth)
-        out = tf.nn.sigmoid(out)
+        out = ALReLU(out)
         out = conv_layer(out, depth)
         out = tf.nn.dropout(out, .6)
         
@@ -50,11 +49,4 @@ def sigmoid_impala_model(unscaled_images, depths=[16,32,32,32]):
     out = tf.nn.relu(out)
     out = tf.layers.dense(out, 256, activation=tf.nn.relu, name='layer_' + get_layer_num_str())
 
-<<<<<<< HEAD
-    # change to sigmoid
-    # out = tf.nn.sigmoid(out)
-    # out = tf.layers.dense(out, 256, activation=tf.nn.sigmoid, name='layer_' + get_layer_num_str())
-
-=======
->>>>>>> 2695f0864132a2f01786008a431e0132d3b39b63
     return out

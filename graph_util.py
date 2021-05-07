@@ -107,7 +107,8 @@ def plot_experiment(run_directory_prefix, titles=None, suffixes=[''], normalizat
                 dimy = len(axarr[0])
                 ax = axarr[env_idx // dimy][env_idx % dimy]
 
-            csv_files = [f"results/{resid}/progress-{env_name}{'-' if len(suffix) > 0 else ''}{suffix}.csv" for resid in run_folders]
+            #csv_files = [f"results/{resid}/progress-{env_name}{'-' if len(suffix) > 0 else ''}{suffix}.csv" for resid in run_folders]
+            csv_files = ["results/easy-all-run0/progress-coinrun.csv"]
             curr_ax = None if will_normalize_and_reduce else ax
 
             raw_data = np.array([read_csv(file, key_name) for file in csv_files])

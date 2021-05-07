@@ -10,8 +10,16 @@ import tensorflow.compat.v1 as tf
 tf.disable_v2_behavior()
 
 from baselines.ppo2 import ppo2
-from baselines.common.models import build_impala_cnn
+
+from .models.base_impala import base_impala_model
+from .models.sigmoid_impala import sigmoid_impala_model
+from .models.leaky_relu_impala import leaky_relu_impala_model
+from .models.sigmoid_leaky_impala import sigmoid_leaky_impala_model
+from .models.leaky_sigmoid_impala import leaky_sigmoid_impala_model
+from .models.absolute_relu_model import absolute_relu_impala_model
+
 from baselines.common.mpi_util import setup_mpi_gpus
+from baselines.common.models import build_impala_cnn
 from procgen import ProcgenEnv
 from baselines.common.vec_env import (
     VecExtractDictObs,
@@ -154,7 +162,7 @@ def main():
     parser.add_argument('--num_levels', type=int, default=0)
     parser.add_argument('--start_level', type=int, default=0)
     parser.add_argument('--test_worker_interval', type=int, default=0)
-    parser.add_argument('--timesteps_per_proc', type=int, default=50_000_000)
+    parser.add_argument('--timesteps_per_proc', type=int, default=50000000)
 
     args = parser.parse_args()
 
@@ -166,6 +174,7 @@ def main():
 
     if test_worker_interval > 0:
         is_test_worker = rank % test_worker_interval == (test_worker_interval - 1)
+        #print("hi")
 
     train_fn(args.env_name,
         args.num_envs,
@@ -178,3 +187,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+    print("All Done")
