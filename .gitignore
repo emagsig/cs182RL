@@ -6,5 +6,5 @@ saved_models/
 train_results/*
 .vs/
 .vscode/
-./ipynb_checkpoints
+.ipynb_checkpoints/
 train_procgen/models/.ipynb_checkpoints/
