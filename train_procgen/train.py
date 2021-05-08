@@ -1,6 +1,11 @@
 """
 Run:
+
+Initial Runs:
 python -m train_procgen.train --env_name fruitbot --num_levels 50 --timesteps_per_proc 1_000_000 --start_level 500 --num_envs 32
+
+50 Million Runs:
+
 """
 
 """ USE CPU """
@@ -42,7 +47,7 @@ from .models.absolute_relu import absolute_relu_impala_model
 from .models.lstm_base import lstm_base
 from .models.lstmcnn_base import lstm_cnn
 
-def train_fn(env_name, num_envs, distribution_mode, num_levels, start_level, timesteps_per_proc, is_test_worker=False, log_dir='/tmp/procgen', comm=None):
+def train_fn(env_name, num_envs, distribution_mode, num_levels, start_level, timesteps_per_proc, cnn_type, lstm_type, layer_norm, is_test_worker=False, log_dir='/tmp/procgen', comm=None):
     learning_rate = 5e-4
     ent_coef = .01
     gamma = .999
@@ -109,6 +114,15 @@ def train_fn(env_name, num_envs, distribution_mode, num_levels, start_level, tim
     # print("absolute_relu_impala_model")
     # conv_fn = lambda x: absolute_relu_impala_model(x, depths=[16,32,32,32])
 
+    cnn_choices = {"none": None, "base_impala": base_impala_model, "leaky_sigmoid_impala": leaky_sigmoid_impala_model, 
+        "sigmoid_leaky_impala": sigmoid_leaky_impala_model, "leaky_relu_impala": leaky_relu_impala_model, 
+        "sigmoid_impala": sigmoid_impala_model, "absolute_relu_impala": absolute_relu_impala_model}
+    cnn = cnn_choices[cnn_type]
+
+    conv_fn = None
+    if cnn != None:
+        conv_fn = lambda x: cnn(x, depths=[16,32,32,32])
+
     '''
     LSTM
     '''
@@ -124,7 +138,6 @@ def train_fn(env_name, num_envs, distribution_mode, num_levels, start_level, tim
     # print("lstmcnn_leakysigmoid_")
     # conv_fn = lstm_cnn(nlstm=128, layer_norm=True, conv_fn=leaky_sigmoid_impala_model, depths = [16,32,32,32]) # **kwargs for cnn passed in normally
 
-    # TODO: Finish subbing in remaining cnns and upload results to groupme
     # print("lstmcnn_sigmoidleaky_")
     # conv_fn = lstm_cnn(nlstm=128, layer_norm=True, conv_fn=sigmoid_leaky_impala_model, depths = [16,32,32,32]) # **kwargs for cnn passed in normally
 
@@ -134,9 +147,20 @@ def train_fn(env_name, num_envs, distribution_mode, num_levels, start_level, tim
     # print("lstmcnn_sigmoid_")
     # conv_fn = lstm_cnn(nlstm=128, layer_norm=True, conv_fn=sigmoid_impala_model, depths = [16,32,32,32]) # **kwargs for cnn passed in normally
 
-    print("lstmcnn_absrelu_")
-    conv_fn = lstm_cnn(nlstm=128, layer_norm=True, conv_fn=absolute_relu_impala_model, depths = [16,32,32,32]) # **kwargs for cnn passed in normally
+    # print("lstmcnn_absrelu_")
+    # conv_fn = lstm_cnn(nlstm=128, layer_norm=True, conv_fn=absolute_relu_impala_model, depths = [16,32,32,32]) # **kwargs for cnn passed in normally
 
+    lnorm = True
+    if layer_norm == "False":
+        lnorm = False
+
+    if cnn != None and lstm_type == "cnn_lstm":
+        conv_fn = lstm_cnn(nlstm=128, layer_norm=lnorm, conv_fn=conv_fn, depths = [16,32,32,32])
+    elif lstm_type == "base_lstm":
+        conv_fn = lstm_base(nlstm=128, layer_norm=lnorm)
+
+    if conv_fn == None:
+        raise ValueError("conv_fn CANNOT be None")
 
     logger.info("training")
     ppo2.learn(
@@ -163,6 +187,10 @@ def train_fn(env_name, num_envs, distribution_mode, num_levels, start_level, tim
     )
 
 def main():
+    cnn_choices = ["none", "base_impala", "leaky_sigmoid_impala", "sigmoid_leaky_impala", "leaky_relu_impala", "sigmoid_impala", "absolute_relu_impala"]
+    lstm_choices = ["none", "base_lstm", "cnn_lstm"]
+    layer_norm_choices = ["True", "False"]
+
     parser = argparse.ArgumentParser(description='Process procgen training arguments.')
     parser.add_argument('--env_name', type=str, default='coinrun')
     parser.add_argument('--num_envs', type=int, default=64)
@@ -170,7 +198,11 @@ def main():
     parser.add_argument('--num_levels', type=int, default=0)
     parser.add_argument('--start_level', type=int, default=0)
     parser.add_argument('--test_worker_interval', type=int, default=0)
-    parser.add_argument('--timesteps_per_proc', type=int, default=50000000)
+    parser.add_argument('--timesteps_per_proc', type=int, default=1000000)
+    # choose model type
+    parser.add_argument('--cnn_type', type=str, default='base_impala', choices=cnn_choices)
+    parser.add_argument('--lstm_type', type=str, default='none', choices=lstm_choices)
+    parser.add_argument('--layer_norm', type=str, default='True', choices=layer_norm_choices)
 
     args = parser.parse_args()
 
@@ -183,6 +215,15 @@ def main():
     if test_worker_interval > 0:
         is_test_worker = rank % test_worker_interval == (test_worker_interval - 1)
         #print("hi")
+    
+    if args.lstm_type == "base_lstm" and args.cnn_type != "none":
+        args.cnn_type = "none"
+        print("MODEL CHOICE ERROR: The 'base_lstm' model does not implement CNNs so the CNN choice will be disregarded, choose 'cnn_lstm' if you would like to combine the LSTM and CNN")
+    elif args.cnn_type == "none" and args.lstm_type != "base_lstm":
+        args.cnn_type = "base_lstm"
+        print("MODEL CHOICE WARNING: Cannot train a CNN-LSTM model without a CNN model choice selected. Training will default to the 'base_lstm' CNN model")
+
+    print("MODEL CONFIGURATION: CNN Type: ", args.cnn_type, " LSTM type: ", args.lstm_type, " Layer Normalization: ", args.layer_norm)
 
     train_fn(args.env_name,
         args.num_envs,
@@ -190,9 +231,12 @@ def main():
         args.num_levels,
         args.start_level,
         args.timesteps_per_proc,
+        args.cnn_type,
+        args.lstm_type,
+        args.layer_norm,
         is_test_worker=is_test_worker,
         comm=comm)
 
 if __name__ == '__main__':
     main()
-    print("All Done")
+    print("All Done Training")
