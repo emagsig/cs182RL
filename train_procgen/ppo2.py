@@ -21,7 +21,8 @@ def constfn(val):
 def learn(*, network, env, total_timesteps, eval_env = None, seed=None, nsteps=2048, ent_coef=0.0, lr=3e-4,
             vf_coef=0.5,  max_grad_norm=0.5, gamma=0.99, lam=0.95,
             log_interval=10, nminibatches=4, noptepochs=4, cliprange=0.2,
-            save_interval=0, load_path=None, model_fn=None, update_fn=None, init_fn=None, mpi_rank_weight=1, comm=None, **network_kwargs):
+            save_interval=0, load_path=None, model_fn=None, update_fn=None, init_fn=None, mpi_rank_weight=1, comm=None, 
+            test=False, **network_kwargs):
     '''
     Learn policy using PPO algorithm (https://arxiv.org/abs/1707.06347)
     Parameters:
@@ -51,6 +52,7 @@ def learn(*, network, env, total_timesteps, eval_env = None, seed=None, nsteps=2
                                       and 0 is the end of the training
     save_interval: int                number of timesteps between saving events
     load_path: str                    path to load the model from
+    test: bool                        Testing mode T or F
     **network_kwargs:                 keyword arguments to the policy / network builder. See baselines.common/policies.py/build_policy and arguments to a particular type of network
                                       For instance, 'mlp' network architecture has arguments num_hidden and num_layers.
     '''
@@ -81,6 +83,8 @@ def learn(*, network, env, total_timesteps, eval_env = None, seed=None, nsteps=2
     if model_fn is None:
         from baselines.ppo2.model import Model
         model_fn = Model
+        # from . import model
+        # model_fn = model.Model
 
     model = model_fn(policy=policy, ob_space=ob_space, ac_space=ac_space, nbatch_act=nenvs, nbatch_train=nbatch_train,
                     nsteps=nsteps, ent_coef=ent_coef, vf_coef=vf_coef,
@@ -88,6 +92,7 @@ def learn(*, network, env, total_timesteps, eval_env = None, seed=None, nsteps=2
 
     if load_path is not None:
         model.load(load_path)
+
     # Instantiate the runner object
     runner = Runner(env=env, model=model, nsteps=nsteps, gamma=gamma, lam=lam)
     if eval_env is not None:
@@ -127,38 +132,41 @@ def learn(*, network, env, total_timesteps, eval_env = None, seed=None, nsteps=2
         if eval_env is not None:
             eval_epinfobuf.extend(eval_epinfos)
 
-        # Here what we're going to do is for each minibatch calculate the loss and append it.
-        mblossvals = []
-        if states is None: # nonrecurrent version
-            # Index of each element of batch_size
-            # Create the indices array
-            inds = np.arange(nbatch)
-            for _ in range(noptepochs):
-                # Randomize the indexes
-                np.random.shuffle(inds)
-                # 0 to batch_size with batch_train_size step
-                for start in range(0, nbatch, nbatch_train):
-                    end = start + nbatch_train
-                    mbinds = inds[start:end]
-                    slices = (arr[mbinds] for arr in (obs, returns, masks, actions, values, neglogpacs))
-                    mblossvals.append(model.train(lrnow, cliprangenow, *slices))
-        else: # recurrent version
-            assert nenvs % nminibatches == 0
-            envsperbatch = nenvs // nminibatches
-            envinds = np.arange(nenvs)
-            flatinds = np.arange(nenvs * nsteps).reshape(nenvs, nsteps)
-            for _ in range(noptepochs):
-                np.random.shuffle(envinds)
-                for start in range(0, nenvs, envsperbatch):
-                    end = start + envsperbatch
-                    mbenvinds = envinds[start:end]
-                    mbflatinds = flatinds[mbenvinds].ravel()
-                    slices = (arr[mbflatinds] for arr in (obs, returns, masks, actions, values, neglogpacs))
-                    mbstates = states[mbenvinds]
-                    mblossvals.append(model.train(lrnow, cliprangenow, *slices, mbstates))
+        if not test:
+            # Here what we're going to do is for each minibatch calculate the loss and append it.
+            mblossvals = []
+            if states is None: # nonrecurrent version
+                # Index of each element of batch_size
+                # Create the indices array
+                inds = np.arange(nbatch)
+                for _ in range(noptepochs):
+                    # Randomize the indexes
+                    np.random.shuffle(inds)
+                    # 0 to batch_size with batch_train_size step
+                    for start in range(0, nbatch, nbatch_train):
+                        end = start + nbatch_train
+                        mbinds = inds[start:end]
+                        slices = (arr[mbinds] for arr in (obs, returns, masks, actions, values, neglogpacs))
+                        mblossvals.append(model.train(lrnow, cliprangenow, *slices))
+            else: # recurrent version
+                assert nenvs % nminibatches == 0
+                envsperbatch = nenvs // nminibatches
+                envinds = np.arange(nenvs)
+                flatinds = np.arange(nenvs * nsteps).reshape(nenvs, nsteps)
+                for _ in range(noptepochs):
+                    np.random.shuffle(envinds)
+                    for start in range(0, nenvs, envsperbatch):
+                        end = start + envsperbatch
+                        mbenvinds = envinds[start:end]
+                        mbflatinds = flatinds[mbenvinds].ravel()
+                        slices = (arr[mbflatinds] for arr in (obs, returns, masks, actions, values, neglogpacs))
+                        mbstates = states[mbenvinds]
+                        mblossvals.append(model.train(lrnow, cliprangenow, *slices, mbstates))
 
-        # Feedforward --> get losses --> update
-        lossvals = np.mean(mblossvals, axis=0)
+            # Feedforward --> get losses --> update
+            lossvals = np.mean(mblossvals, axis=0)
+
+
         # End timer
         tnow = time.perf_counter()
         # Calculate the fps (frame per second)
@@ -182,8 +190,10 @@ def learn(*, network, env, total_timesteps, eval_env = None, seed=None, nsteps=2
                 logger.logkv('eval_eprewmean', safemean([epinfo['r'] for epinfo in eval_epinfobuf]) )
                 logger.logkv('eval_eplenmean', safemean([epinfo['l'] for epinfo in eval_epinfobuf]) )
             logger.logkv('misc/time_elapsed', tnow - tfirststart)
-            for (lossval, lossname) in zip(lossvals, model.loss_names):
-                logger.logkv('loss/' + lossname, lossval)
+
+            if not test:
+                for (lossval, lossname) in zip(lossvals, model.loss_names):
+                    logger.logkv('loss/' + lossname, lossval)
 
             logger.dumpkvs()
         if save_interval and (update % save_interval == 0 or update == 1) and logger.get_dir() and is_mpi_root:
@@ -194,7 +204,7 @@ def learn(*, network, env, total_timesteps, eval_env = None, seed=None, nsteps=2
             model.save(savepath)
 
     return model
-    
+
 # Avoid division error when calculate the mean (in our case if epinfo is empty returns np.nan, not return an error)
 def safemean(xs):
     return np.nan if len(xs) == 0 else np.mean(xs)

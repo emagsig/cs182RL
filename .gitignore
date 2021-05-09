@@ -4,6 +4,7 @@ __pycache__/
 *.egg-info/
 saved_models/
 train_results/*/
+test_results/*/
 .vs/
 .vscode/
 .ipynb_checkpoints/

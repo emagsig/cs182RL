@@ -1,11 +1,30 @@
+# TODO: See for testing https://github.com/ana-tudor/classyconditioning/
+
 """
-Run:
+COMMAND LINE PROMPTS
 
-Initial Runs:
-python -m train_procgen.train --env_name fruitbot --num_levels 50 --timesteps_per_proc 1_000_000 --start_level 500 --num_envs 32
+Choices for arguments:
+cnn_choices = ["none", "base_impala", "leaky_sigmoid_impala", "sigmoid_leaky_impala", "leaky_relu_impala", "sigmoid_impala", "absolute_relu_impala"]
+lstm_choices = ["none", "base_lstm", "cnn_lstm"]
+layer_norm_choices = [True, False]
 
-50 Million Runs:
+Training 1M Run:
+FORMAT:
+python -m train_procgen.train --env_name fruitbot --num_levels 50 --timesteps_per_proc 1_000_000 --start_level 500 --num_envs 32 --cnn_type [CNN TYPE] --lstm_type [LSTM TYPE] --layer_norm [Boolean]
+EXAMPLE:
+python -m train_procgen.train --env_name fruitbot --num_levels 50 --timesteps_per_proc 1_000_000 --start_level 500 --num_envs 32 --cnn_type absolute_relu_impala --lstm_type none --layer_norm False
 
+Training 50M Runs:
+FORMAT:
+python -m train_procgen.train --env_name fruitbot --num_levels 50 --timesteps_per_proc 50_000_000 --start_level 500 --num_envs 32 --cnn_type [CNN TYPE] --lstm_type [LSTM TYPE] --layer_norm [Boolean]
+EXAMPLE:
+python -m train_procgen.train --env_name fruitbot --num_levels 50 --timesteps_per_proc 50_000_000 --start_level 500 --num_envs 32 --cnn_type absolute_relu_impala --lstm_type none --layer_norm False
+
+Testing:
+FORMAT:
+python -m train_procgen.train --test True --num_levels 500 --start_level 0 --timesteps_per_proc 20000 --load_path train_results\[Model Checkpoint Directory]\[Checkpoint Number]
+EXAMPLE:
+python -m train_procgen.train --test True --num_levels 500 --start_level 0 --timesteps_per_proc 20000 --load_path train_results\absrelu_checkpoints\00120
 """
 
 """ USE CPU """
@@ -14,7 +33,8 @@ python -m train_procgen.train --env_name fruitbot --num_levels 50 --timesteps_pe
 import tensorflow.compat.v1 as tf
 tf.disable_v2_behavior()
 
-from baselines.ppo2 import ppo2
+# from baselines.ppo2 import ppo2
+from . import ppo2
 
 from .models.base_impala import base_impala_model
 from .models.sigmoid_impala import sigmoid_impala_model
@@ -47,7 +67,9 @@ from .models.absolute_relu import absolute_relu_impala_model
 from .models.lstm_base import lstm_base
 from .models.lstmcnn_base import lstm_cnn
 
-def train_fn(env_name, num_envs, distribution_mode, num_levels, start_level, timesteps_per_proc, cnn_type, lstm_type, layer_norm, is_test_worker=False, log_dir='/tmp/procgen', comm=None):
+def train_fn(env_name, num_envs, distribution_mode, num_levels, start_level, 
+    timesteps_per_proc, cnn_type, lstm_type, layer_norm, load_path, test, is_test_worker=False, log_dir='/tmp/procgen', comm=None):
+    
     learning_rate = 5e-4
     ent_coef = .01
     gamma = .999
@@ -65,6 +87,9 @@ def train_fn(env_name, num_envs, distribution_mode, num_levels, start_level, tim
     num_levels = 0 if is_test_worker else num_levels
 
     log_dir = './train_results'
+    if test:
+        log_dir = './test_results'
+    print("Log dir: ", log_dir)
     os.path.exists(log_dir)
 
     if log_dir is not None:
@@ -150,17 +175,15 @@ def train_fn(env_name, num_envs, distribution_mode, num_levels, start_level, tim
     # print("lstmcnn_absrelu_")
     # conv_fn = lstm_cnn(nlstm=128, layer_norm=True, conv_fn=absolute_relu_impala_model, depths = [16,32,32,32]) # **kwargs for cnn passed in normally
 
-    lnorm = True
-    if layer_norm == "False":
-        lnorm = False
-
-    if cnn != None and lstm_type == "cnn_lstm":
-        conv_fn = lstm_cnn(nlstm=128, layer_norm=lnorm, conv_fn=conv_fn, depths = [16,32,32,32])
+    if (cnn != None) and (lstm_type == "cnn_lstm"):
+        conv_fn = lstm_cnn(nlstm=256, layer_norm=layer_norm, conv_fn=cnn, depths = [16,32,32,32])
+        # conv_fn = lstm_cnn(nlstm=128, layer_norm=layer_norm, conv_fn=cnn, depths = [16,32,32,32])
     elif lstm_type == "base_lstm":
-        conv_fn = lstm_base(nlstm=128, layer_norm=lnorm)
+        conv_fn = lstm_base(nlstm=256, layer_norm=layer_norm)
 
     if conv_fn == None:
         raise ValueError("conv_fn CANNOT be None")
+
 
     logger.info("training")
     ppo2.learn(
@@ -184,12 +207,13 @@ def train_fn(env_name, num_envs, distribution_mode, num_levels, start_level, tim
         init_fn=None,
         vf_coef=0.5,
         max_grad_norm=0.5,
+        load_path = load_path,
+        test = test
     )
 
 def main():
     cnn_choices = ["none", "base_impala", "leaky_sigmoid_impala", "sigmoid_leaky_impala", "leaky_relu_impala", "sigmoid_impala", "absolute_relu_impala"]
     lstm_choices = ["none", "base_lstm", "cnn_lstm"]
-    layer_norm_choices = ["True", "False"]
 
     parser = argparse.ArgumentParser(description='Process procgen training arguments.')
     parser.add_argument('--env_name', type=str, default='coinrun')
@@ -199,10 +223,22 @@ def main():
     parser.add_argument('--start_level', type=int, default=0)
     parser.add_argument('--test_worker_interval', type=int, default=0)
     parser.add_argument('--timesteps_per_proc', type=int, default=1000000)
+    # For testing
+    parser.add_argument('--load_path', type=str, default=None,
+        help='The relative or absolute path to a model checkpoint if an initial \
+                load from this checkpoint is desired')
+    parser.add_argument('--test', type=bool, default=False,
+        help='True if the model should run as a testing agent, and should not be updated')
     # choose model type
-    parser.add_argument('--cnn_type', type=str, default='base_impala', choices=cnn_choices)
-    parser.add_argument('--lstm_type', type=str, default='none', choices=lstm_choices)
-    parser.add_argument('--layer_norm', type=str, default='True', choices=layer_norm_choices)
+    parser.add_argument('--cnn_type', type=str, default='base_impala', choices=cnn_choices,
+        help='Choose the type of cnn to train: \
+            [none, base_impala, leaky_sigmoid_impala, sigmoid_leaky_impala, leaky_relu_impala, sigmoid_impala, absolute_relu_impala]')
+    parser.add_argument('--lstm_type', type=str, default='none', choices=lstm_choices,
+        help='Choose the type of lstm to train: \
+            [none, base_lstm, cnn_lstm]')
+    parser.add_argument('--layer_norm', type=bool, default=True,
+        help='Choose whether the lstm should have layer normalization: \
+            [True, False]')
 
     args = parser.parse_args()
 
@@ -234,6 +270,8 @@ def main():
         args.cnn_type,
         args.lstm_type,
         args.layer_norm,
+        args.load_path,
+        args.test,
         is_test_worker=is_test_worker,
         comm=comm)
 
