@@ -12,19 +12,19 @@ Training 1M Run:
 FORMAT:
 python -m train_procgen.train --env_name fruitbot --num_levels 50 --timesteps_per_proc 1_000_000 --start_level 500 --num_envs 32 --cnn_type [CNN TYPE] --lstm_type [LSTM TYPE] --layer_norm [Boolean]
 EXAMPLE:
-python -m train_procgen.train --env_name fruitbot --num_levels 50 --timesteps_per_proc 1_000_000 --start_level 500 --num_envs 32 --cnn_type absolute_relu_impala --lstm_type none --layer_norm False
+python -m train_procgen.train --env_name fruitbot --num_levels 50 --timesteps_per_proc 1_000_000 --start_level 500 --num_envs 32 --cnn_type leaky_relu_impala --lstm_type cnn_lstm --layer_norm True
 
 Training 50M Runs:
 FORMAT:
-python -m train_procgen.train --env_name fruitbot --num_levels 50 --timesteps_per_proc 50_000_000 --start_level 500 --num_envs 32 --cnn_type [CNN TYPE] --lstm_type [LSTM TYPE] --layer_norm [Boolean]
+python -m train_procgen.train --env_name fruitbot --num_levels 100 --timesteps_per_proc 50_000_000 --start_level 500 --num_envs 32 --cnn_type [CNN TYPE] --lstm_type [LSTM TYPE] --layer_norm [Boolean]
 EXAMPLE:
-python -m train_procgen.train --env_name fruitbot --num_levels 50 --timesteps_per_proc 50_000_000 --start_level 500 --num_envs 32 --cnn_type absolute_relu_impala --lstm_type none --layer_norm False
+python -m train_procgen.train --env_name fruitbot --num_levels 100 --timesteps_per_proc 50_000_000 --start_level 500 --num_envs 32 --cnn_type absolute_relu_impala --lstm_type none --layer_norm True
 
 Testing:
 FORMAT:
 python -m train_procgen.train --test True --num_levels 500 --start_level 0 --timesteps_per_proc 20000 --load_path train_results\[Model Checkpoint Directory]\[Checkpoint Number]
 EXAMPLE:
-python -m train_procgen.train --test True --num_levels 500 --start_level 0 --timesteps_per_proc 20000 --load_path train_results\absrelu_checkpoints\00120
+python -m train_procgen.train --test True --num_levels 500 --start_level 0 --timesteps_per_proc 20000 --load_path train_results\50M_absrelu_checkpoints\05010
 """
 
 """ USE CPU """

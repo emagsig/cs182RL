@@ -1,3 +1,10 @@
+Requirements: MuJoCo 1.6
+
+GPU Related:
+Nvidia Cuda Stuff
+Tensorflow Stuff
+---------------------------------------------------
+
 **Status:** Archive (code is provided as-is, no updates expected)
 
 # Leveraging Procedural Generation to Benchmark Reinforcement Learning
