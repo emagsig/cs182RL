@@ -1,20 +1,15 @@
-CS 182 Reinforcement Learning Project
+# CS 182 Reinforcement Learning Project
 
----------------------------------------------------
-
-## Install
-
-#### Initial Steps:
-
+## Setup
 1) Install Mujoco 150: https://www.roboti.us/
 ##### NOTE: When we installed Mujoco 1.5, since Mujoco 2.0 already existed as our default Mujoco PATH in Windows (from HW), we had to move "glfw3.dll", "glfw3.lib", and "glfw3static.lib" from "mjpro150/bin" to "mujoco200/bin"
 
 2) To use GPU: Install necessary CUDA/cuDNN dependencies by following directions in this link: https://www.tensorflow.org/install/gpu
-(If you don't want to use GPU, ignore this step and follow instruction 5) below)
+(If you don't want to use GPU, ignore this step and follow instruction 5) below).
 
 3) Install Anaconda 
 
-4) Install env dependencies with cmd line 
+4) Install env dependencies with cmd prompt commands
 ```
 conda env update --name 182RLproj --file environment.yml
 conda activate 182RLproj
@@ -63,12 +58,12 @@ FORMAT:
 ```
 python -m train_procgen.train --test True --num_levels 500 --start_level 0 --timesteps_per_proc 20000 --load_path train_results\[Model Checkpoint Directory]\[Checkpoint Number]
 ```
-EXAMPLE:
+EXAMPLES: 2nd option is what the model checkpoints will most likely look like after training
 ```
 python -m train_procgen.train --test True --num_levels 500 --start_level 50 --timesteps_per_proc 20000 --load_path train_results\50M_absrelu_checkpoints\05020
 python -m train_procgen.train --test True --num_levels 500 --start_level 0 --timesteps_per_proc 20000 --load_path train_results\checkpoints\00060
 ```
 
-Find testing results in folder "test_results\progress.csv". 
-"eplenmean": Mean of episode lengths from testing
-"eprewmean": Mean of episode rewards from training
+Find testing results in folder "test_results\progress.csv".  
+> "eplenmean": Mean of episode lengths from testing  
+> "eprewmean": Mean of episode rewards from training
