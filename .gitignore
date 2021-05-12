@@ -9,3 +9,5 @@ test_results/*/
 .vscode/
 .ipynb_checkpoints/
 train_procgen/models/.ipynb_checkpoints/
+environment_orig.yml
+req.txt

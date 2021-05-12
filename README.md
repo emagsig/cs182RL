@@ -5,140 +5,73 @@ Nvidia Cuda Stuff
 Tensorflow Stuff
 ---------------------------------------------------
 
-**Status:** Archive (code is provided as-is, no updates expected)
-
-# Leveraging Procedural Generation to Benchmark Reinforcement Learning
-
-#### [[Blog Post]](https://openai.com/blog/procgen-benchmark/) [[Paper]](https://arxiv.org/abs/1912.01588)
-
-This is code for training agents for some of the experiments in [Leveraging Procedural Generation to Benchmark Reinforcement Learning](https://cdn.openai.com/procgen.pdf) [(citation)](#citation).  The code for the environments is in the [Procgen Benchmark](https://github.com/openai/procgen) repo.
-
-We're currently running a competition which uses these environments to measure sample efficiency and generalization in RL. You can learn more and register [here](https://www.aicrowd.com/challenges/neurips-2020-procgen-competition).
-
-Supported platforms:
-
-- macOS 10.14 (Mojave)
-- Ubuntu 16.04
-
-Supported Pythons:
-
-- 3.7 64-bit
-
 ## Install
 
-You can get miniconda from https://docs.conda.io/en/latest/miniconda.html if you don't have it, or install the dependencies from [`environment.yml`](environment.yml) manually.
+#### Initial Steps:
 
+1) Install Mujoco 150: https://www.roboti.us/
+##### NOTE: When we installed Mujoco 1.5, since Mujoco 2.0 already existed as our default Mujoco PATH in Windows (from HW), we had to move "glfw3.dll", "glfw3.lib", and "glfw3static.lib" from "mjpro150/bin" to "mujoco200/bin"
+
+2) To use GPU: Install necessary CUDA/cuDNN dependencies by following directions in this link: https://www.tensorflow.org/install/gpu
+(If you don't want to use GPU, ignore this step and follow instruction 5) below)
+
+3) Install Anaconda 
+
+4) Install env dependencies with cmd line 
 ```
-git clone https://github.com/openai/train-procgen.git
-conda env update --name train-procgen --file train-procgen/environment.yml
-conda activate train-procgen
+conda env update --name 182RLproj --file environment.yml
+conda activate 182RLproj
 pip install https://github.com/openai/baselines/archive/9ee399f5b20cd70ac0a871927a6cf043b478193f.zip
-pip install -e train-procgen
 ```
 
-## Try it out
+5) Optional: If you would like to use CPU for training instead of GPU, install "tensorflow == 1.15" into our conda environment
 
-Train an agent using PPO on the environment StarPilot:
 
+## Training
+Choose from the below arguments to fill in [CNN TYPE], [LSTM TYPE], [Boolean]
+
+Choices for arguments:
+> cnn_choices = ["none", "base_impala", "leaky_sigmoid_impala", "sigmoid_leaky_impala", "leaky_relu_impala", "sigmoid_impala", "absolute_relu_impala"]
+> lstm_choices = ["none", "base_lstm", "cnn_lstm"]
+> layer_norm_choices = [True, False]
+
+Run the following commands in cmd line after activating the conda environment.
+
+#### Training 1M Runs:
+FORMAT:
 ```
-python -m train_procgen.train --env_name starpilot
+python -m train_procgen.train --env_name fruitbot --num_levels 50 --timesteps_per_proc 1_000_000 --start_level 500 --num_envs 32 --cnn_type [CNN TYPE] --lstm_type [LSTM TYPE] --layer_norm [Boolean]
 ```
-
-Train an agent using PPO on the environment StarPilot using the easy difficulty:
-
+EXAMPLE:
 ```
-python -m train_procgen.train --env_name starpilot --distribution_mode easy
-```
-
-Run parallel training using MPI:
-
-```
-mpiexec -np 8 python -m train_procgen.train --env_name starpilot
-```
-
-Train an agent on a fixed set of N levels:
-
-```
-python -m train_procgen.train --env_name starpilot --num_levels N
+python -m train_procgen.train --env_name fruitbot --num_levels 50 --timesteps_per_proc 1_000_000 --start_level 500 --num_envs 32 --cnn_type leaky_relu_impala --lstm_type cnn_lstm --layer_norm True
 ```
 
-Train an agent on the same 500 levels used in the paper:
-
+#### Training 50M Runs:
+FORMAT:
 ```
-python -m train_procgen.train --env_name starpilot --num_levels 500
+python -m train_procgen.train --env_name fruitbot --num_levels 100 --timesteps_per_proc 50_000_000 --start_level 500 --num_envs 32 --cnn_type [CNN TYPE] --lstm_type [LSTM TYPE] --layer_norm [Boolean]
 ```
-
-Train an agent on a different set of 500 levels:
-
+EXAMPLE:
 ```
-python -m train_procgen.train --env_name starpilot --num_levels 500 --start_level 1000
+python -m train_procgen.train --env_name fruitbot --num_levels 100 --timesteps_per_proc 50_000_000 --start_level 500 --num_envs 32 --cnn_type absolute_relu_impala --lstm_type none --layer_norm True
 ```
 
-Run simultaneous training and testing using MPI. 1 in every 4 workers will be test workers, and the rest will be training workers.
+Find training results in folder "train_results\".
 
-```
-mpiexec -np 8 python -m train_procgen.train --env_name starpilot --num_levels 500 --test_worker_interval 4
-```
+##### NOTE: When training, model checkpoints are saved to "train_results\checkpoints\XXXXX" and training logs are saved to "train_results\progress.csv". Rename folder and logs file to make sure that training results are not overrun when running another training session
 
-Train an agent using PPO on a level in Jumper that requires hard exploration
-
+## Testing
+FORMAT:
 ```
-python -m train_procgen.train --env_name jumper --distribution_mode exploration
+python -m train_procgen.train --test True --num_levels 500 --start_level 0 --timesteps_per_proc 20000 --load_path train_results\[Model Checkpoint Directory]\[Checkpoint Number]
 ```
-
-Train an agent using PPO on a variant of CaveFlyer that requires memory
-
+EXAMPLE:
 ```
-python -m train_procgen.train --env_name caveflyer --distribution_mode memory
+python -m train_procgen.train --test True --num_levels 500 --start_level 50 --timesteps_per_proc 20000 --load_path train_results\50M_absrelu_checkpoints\05020
+python -m train_procgen.train --test True --num_levels 500 --start_level 0 --timesteps_per_proc 20000 --load_path train_results\checkpoints\00060
 ```
 
-View training options:
-
-```
-python -m train_procgen.train --help
-```
-
-## Reproduce and Visualize Results
-
-Sample efficiency on hard environments (results/hard-all-runN):
-
-```
-mpiexec -np 4 python -m train_procgen.train --env_name ENV_NAME --distribution_mode hard
-python -m train_procgen.graph --distribution_mode hard
-```
-
-Sample efficiency on easy environments (results/easy-all-runN):
-
-```
-python -m train_procgen.train --env_name ENV_NAME --distribution_mode easy
-python -m train_procgen.graph --distribution_mode easy
-```
-
-Generalization on hard environments using 500 training levels (results/hard-500-runN):
-
-```
-mpiexec -np 8 python -m train_procgen.train --env_name ENV_NAME --num_levels 500 --distribution_mode hard --test_worker_interval 2
-python -m train_procgen.graph --distribution_mode hard --restrict_training_set
-```
-
-Generalization on easy environments using 200 training levels (results/easy-200-runN):
-
-```
-mpiexec -np 2 python -m train_procgen.train --env_name ENV_NAME --num_levels 200 --distribution_mode easy --test_worker_interval 2
-python -m train_procgen.graph --distribution_mode easy --restrict_training_set
-```
-
-Pass `--normalize_and_reduce` to compute and visualize the mean normalized return with `train_procgen.graph`.
-
-# Citation
-
-Please cite using the following bibtex entry:
-
-```
-@article{cobbe2019procgen,
-  title={Leveraging Procedural Generation to Benchmark Reinforcement Learning},
-  author={Cobbe, Karl and Hesse, Christopher and Hilton, Jacob and Schulman, John},
-  journal={arXiv preprint arXiv:1912.01588},
-  year={2019}
-}
-```
+Find testing results in folder "test_results\progress.csv". 
+"eplenmean": Mean of episode lengths from testing
+"eprewmean": Mean of episode rewards from training

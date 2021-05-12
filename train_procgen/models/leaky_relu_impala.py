@@ -1,6 +1,4 @@
-""" USE CPU """
 # import tensorflow as tf
-""" USE GPU """
 import tensorflow.compat.v1 as tf
 tf.disable_v2_behavior()
 

@@ -24,12 +24,11 @@ Testing:
 FORMAT:
 python -m train_procgen.train --test True --num_levels 500 --start_level 0 --timesteps_per_proc 20000 --load_path train_results\[Model Checkpoint Directory]\[Checkpoint Number]
 EXAMPLE:
-python -m train_procgen.train --test True --num_levels 500 --start_level 0 --timesteps_per_proc 20000 --load_path train_results\50M_absrelu_checkpoints\05010
+python -m train_procgen.train --test True --num_levels 500 --start_level 50 --timesteps_per_proc 20000 --load_path train_results\50M_absrelu_checkpoints\05020
+python -m train_procgen.train --test True --num_levels 500 --start_level 0 --timesteps_per_proc 20000 --load_path train_results\50M_lstmcnn_leakyrelu_checkpoints\04760
 """
 
-""" USE CPU """
 # import tensorflow as tf
-""" USE GPU """
 import tensorflow.compat.v1 as tf
 tf.disable_v2_behavior()
 
@@ -121,24 +120,6 @@ def train_fn(env_name, num_envs, distribution_mode, num_levels, start_level,
     '''
     IMPALA
     '''
-    # print("base_impala_model")
-    # conv_fn = lambda x: base_impala_model(x, depths=[16,32,32,32])
-
-    # print("leaky_sigmoid_impala_model")
-    # conv_fn = lambda x: leaky_sigmoid_impala_model(x, depths=[16,32,32,32])
-
-    # print("sigmoid_leaky_impala_model")
-    # conv_fn = lambda x: sigmoid_leaky_impala_model(x, depths=[16,32,32,32])
-
-    # print("leaky_relu_impala_model")
-    # conv_fn = lambda x: leaky_relu_impala_model(x, depths=[16,32,32,32])
-
-    # print("sigmoid_impala_model")
-    # conv_fn = lambda x: sigmoid_impala_model(x, depths=[16,32,32,32])
-
-    # print("absolute_relu_impala_model")
-    # conv_fn = lambda x: absolute_relu_impala_model(x, depths=[16,32,32,32])
-
     cnn_choices = {"none": None, "base_impala": base_impala_model, "leaky_sigmoid_impala": leaky_sigmoid_impala_model, 
         "sigmoid_leaky_impala": sigmoid_leaky_impala_model, "leaky_relu_impala": leaky_relu_impala_model, 
         "sigmoid_impala": sigmoid_impala_model, "absolute_relu_impala": absolute_relu_impala_model}
@@ -151,30 +132,6 @@ def train_fn(env_name, num_envs, distribution_mode, num_levels, start_level,
     '''
     LSTM
     '''
-    # print("lstm_base")
-    # conv_fn = lstm_base(nlstm=128, layer_norm=False)
-
-    # print("lstmbase_lnorm_")
-    # conv_fn = lstm_base(nlstm=128, layer_norm=True)
-
-    # print("lstmcnn_impala_")
-    # conv_fn = lstm_cnn(nlstm=128, layer_norm=True, conv_fn=base_impala_model, depths = [16,32,32,32]) # **kwargs for cnn passed in normally
-
-    # print("lstmcnn_leakysigmoid_")
-    # conv_fn = lstm_cnn(nlstm=128, layer_norm=True, conv_fn=leaky_sigmoid_impala_model, depths = [16,32,32,32]) # **kwargs for cnn passed in normally
-
-    # print("lstmcnn_sigmoidleaky_")
-    # conv_fn = lstm_cnn(nlstm=128, layer_norm=True, conv_fn=sigmoid_leaky_impala_model, depths = [16,32,32,32]) # **kwargs for cnn passed in normally
-
-    # print("lstmcnn_leakyrelu_")
-    # conv_fn = lstm_cnn(nlstm=128, layer_norm=True, conv_fn=leaky_relu_impala_model, depths = [16,32,32,32]) # **kwargs for cnn passed in normally
-
-    # print("lstmcnn_sigmoid_")
-    # conv_fn = lstm_cnn(nlstm=128, layer_norm=True, conv_fn=sigmoid_impala_model, depths = [16,32,32,32]) # **kwargs for cnn passed in normally
-
-    # print("lstmcnn_absrelu_")
-    # conv_fn = lstm_cnn(nlstm=128, layer_norm=True, conv_fn=absolute_relu_impala_model, depths = [16,32,32,32]) # **kwargs for cnn passed in normally
-
     if (cnn != None) and (lstm_type == "cnn_lstm"):
         conv_fn = lstm_cnn(nlstm=256, layer_norm=layer_norm, conv_fn=cnn, depths = [16,32,32,32])
         # conv_fn = lstm_cnn(nlstm=128, layer_norm=layer_norm, conv_fn=cnn, depths = [16,32,32,32])
@@ -277,4 +234,4 @@ def main():
 
 if __name__ == '__main__':
     main()
-    print("All Done Training")
+    print("All Done")
