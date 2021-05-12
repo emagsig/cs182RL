@@ -1,8 +1,5 @@
-Requirements: MuJoCo 1.6
+CS 182 Reinforcement Learning Project
 
-GPU Related:
-Nvidia Cuda Stuff
-Tensorflow Stuff
 ---------------------------------------------------
 
 ## Install
