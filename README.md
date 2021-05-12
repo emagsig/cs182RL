@@ -56,12 +56,12 @@ Find training results in folder "train_results\".
 ## Testing
 FORMAT:
 ```
-python -m train_procgen.train --test True --num_levels 500 --start_level 0 --timesteps_per_proc 20000 --load_path train_results\[Model Checkpoint Directory]\[Checkpoint Number]
+python -m train_procgen.train --test True --num_levels 500 --start_level 0 --timesteps_per_proc 100000 --load_path train_results\[Model Checkpoint Directory]\[Checkpoint Number]
 ```
 EXAMPLES: 2nd option is what the model checkpoints will most likely look like after training
 ```
-python -m train_procgen.train --test True --num_levels 500 --start_level 50 --timesteps_per_proc 20000 --load_path train_results\50M_absrelu_checkpoints\05020
-python -m train_procgen.train --test True --num_levels 500 --start_level 0 --timesteps_per_proc 20000 --load_path train_results\checkpoints\00060
+python -m train_procgen.train --test True --num_levels 500 --start_level 0 --timesteps_per_proc 100000 --load_path train_results\50M_absrelu_checkpoints\05020
+python -m train_procgen.train --test True --num_levels 500 --start_level 0 --timesteps_per_proc 100000 --load_path train_results\50M_lstmcnn_leakyrelu_checkpoints\04760
 ```
 
 Find testing results in folder "test_results\progress.csv".  

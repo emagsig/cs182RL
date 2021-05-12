@@ -24,8 +24,8 @@ Testing:
 FORMAT:
 python -m train_procgen.train --test True --num_levels 500 --start_level 0 --timesteps_per_proc 20000 --load_path train_results\[Model Checkpoint Directory]\[Checkpoint Number]
 EXAMPLE:
-python -m train_procgen.train --test True --num_levels 500 --start_level 50 --timesteps_per_proc 20000 --load_path train_results\50M_absrelu_checkpoints\05020
-python -m train_procgen.train --test True --num_levels 500 --start_level 0 --timesteps_per_proc 20000 --load_path train_results\50M_lstmcnn_leakyrelu_checkpoints\04760
+python -m train_procgen.train --test True --num_levels 500 --start_level 0 --timesteps_per_proc 100000 --load_path train_results\50M_absrelu_checkpoints\05020
+python -m train_procgen.train --test True --num_levels 500 --start_level 0 --timesteps_per_proc 100000 --load_path train_results\50M_lstmcnn_leakyrelu_checkpoints\04760
 """
 
 # import tensorflow as tf
@@ -78,8 +78,8 @@ def train_fn(env_name, num_envs, distribution_mode, num_levels, start_level,
     ppo_epochs = 3
     clip_range = .2
     use_vf_clipping = True
-    log_interval = 10
-    save_interval = 10 # default 0
+    log_interval = 1
+    save_interval = 1 # default 0
     # timesteps_per_proc = timesteps_per_proc
 
     mpi_rank_weight = 0 if is_test_worker else 1
